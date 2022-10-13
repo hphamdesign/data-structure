@@ -1,0 +1,96 @@
+// npm install cheerio
+
+var fs = require('fs');
+var cheerio = require('cheerio');
+
+// load the cheerio object into a variable, `content`
+// which holds data and metadata about the html file (written as txt)
+var content = fs.readFileSync('/home/ec2-user/environment/data-structure/data/m01.txt');
+
+// load `content` into a cheerio object
+var $ = cheerio.load(content);
+
+let rawData = [];
+let finalData = [];
+
+$('tr').each(function(i, elem) {
+    if ($(elem).attr("style")=="margin-bottom:10px") {
+        // console.log($(elem).html());
+        // console.log('*************')
+        let rawData = $(elem).html();
+        //run function
+        let final = parseData(rawData);
+        console.log(final)
+     }
+    });
+
+function parseData(data) {
+    //defining 2 separate tds
+    let td1=data.split('</td>')[0]
+    let td2=data.split('</td>')[1]
+    
+    //Parsing location
+    let finalName = td1.split(' - ')[0].split('<b>')[1]
+    let finalLocation = td1.split('</h4>')[0].split('<h4 style="margin:0;padding:0;">')[1]
+    
+    //address
+    let address = td1.split('<b>')[1].split("<br>")[1].replace(', \n\t\t\t\t\t\t','').trim()
+    let zip = td1.split('<b>')[1].split('\t\t\t\t\t\t<br>')[1].replace('\n','').trim()
+    let finalAddress = address + zip
+    
+    //check wheelchair access
+    let wheelchair;
+    if(td1.includes('Wheelchair Access')){
+     wheelchair = "yes"
+  }else{
+    wheelchair = "unknown"
+  }
+   
+   let meeting={
+        day:"",
+        start: "",
+        end:"",
+        type:"",
+        specialInterest:"",
+        }
+    //get meeting time
+    for(let i=0;i<td2.length;i++){
+    
+    meeting.day = td2.split(' From</b>')[0].split('<b>')[1]
+    meeting.start = td2.split('From</b>  ')[1].split(' <b>to</b>')[0]
+    meeting.end = td2.split(' <b>to</b> ')[1].split(' <br><b>')[0]
+    
+    //check special interest
+    if(td2.includes('Special')) {
+        meeting.specialInterest = td2.split('<b>')[4].split('</b> ')[1].split('\n')[0]
+    }
+    else{
+        meeting.specialInterest = 'none'
+    }
+    
+    //check meeting type
+    if(td2.includes('Type')){
+        meeting.type = td2.split(' = ')[1].split(' <br>')[0].split(' \n')[0]
+    }
+    else{
+        meeting.type = 'unknown'
+    }
+}
+     
+  finalData.push({
+    location: finalLocation,
+    address: finalAddress,
+    name: finalName,
+    wheelchair: wheelchair,
+    meeting: meeting,
+  })
+
+  return finalData;
+ };
+
+// function logTrs (tr) {
+// //     console.log('tr')
+// //     console.log('*************')
+//         meetings.push(tr)
+//         console.log(meetings.length)
+// }
